@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # net10.0-windows: the contract targets the host that loads a plugin.
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build
+        # The contract fails its own build on an undocumented public member
+        # (CS1591/CS1573 as errors), so this step is the documentation gate too.
+        run: dotnet build WSGM.Device.Sdk.slnx --configuration Release
+
+      - name: Test
+        run: dotnet test WSGM.Device.Sdk.slnx --configuration Release --no-build
+
+      - name: Pack
+        run: dotnet pack src/WSGM.Device.Sdk/WSGM.Device.Sdk.csproj --configuration Release --no-build --output artifacts
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg

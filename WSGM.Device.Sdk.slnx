@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WSGM.Device.Sdk/WSGM.Device.Sdk.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WSGM.Device.Sdk.Tests/WSGM.Device.Sdk.Tests.csproj" />
+  </Folder>
+</Solution>
