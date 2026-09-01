@@ -58,6 +58,7 @@ public sealed record PluginSettingSection
     public required string SectionId { get; init; }
 
     /// <summary>The WSGM-owned title key, or <see cref="SettingSectionKey.Custom"/>.</summary>
+    /// <remarks>Undefined numeric enum values are rejected by <see cref="TryValidate"/>.</remarks>
     public required SettingSectionKey Key { get; init; }
 
     /// <summary>
@@ -83,6 +84,12 @@ public sealed record PluginSettingSection
         if (!PlainText.IsIdentifier(SectionId, MaxSectionIdLength))
         {
             error = $"sectionId '{SectionId}' is not a legal identifier.";
+            return false;
+        }
+
+        if (!System.Enum.IsDefined(Key))
+        {
+            error = $"section '{SectionId}' has an undefined key '{Key}'.";
             return false;
         }
 

@@ -22,6 +22,7 @@ public sealed record CapabilityDisplay
     public const int MaxCustomLabelLength = 48;
 
     /// <summary>The WSGM-owned display key, or <see cref="DisplayKey.Custom"/>.</summary>
+    /// <remarks>Undefined numeric enum values are rejected by <see cref="TryValidate"/>.</remarks>
     public required DisplayKey Key { get; init; }
 
     /// <summary>
@@ -37,6 +38,12 @@ public sealed record CapabilityDisplay
     /// <returns><see langword="true"/> when the label is safe to render.</returns>
     public bool TryValidate(out string? error)
     {
+        if (!System.Enum.IsDefined(Key))
+        {
+            error = $"display key '{Key}' is not defined.";
+            return false;
+        }
+
         if (Key is not DisplayKey.Custom)
         {
             // A label alongside a real key would be dead weight that some surface eventually renders

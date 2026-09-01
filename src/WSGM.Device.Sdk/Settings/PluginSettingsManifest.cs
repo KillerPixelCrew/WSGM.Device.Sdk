@@ -28,6 +28,7 @@ public sealed record PluginSettingDescriptor
     public required string SettingId { get; init; }
 
     /// <summary>The shape of the value, which decides the control WSGM draws.</summary>
+    /// <remarks>Undefined numeric enum values are rejected by <see cref="TryValidate"/>.</remarks>
     public required CapabilityValueKind ValueKind { get; init; }
 
     /// <summary>How WSGM labels it.</summary>
@@ -55,9 +56,13 @@ public sealed record PluginSettingDescriptor
     public int? Step { get; init; }
 
     /// <summary>Unit of a numeric value.</summary>
+    /// <remarks>Undefined numeric enum values are rejected by <see cref="TryValidate"/>.</remarks>
     public CapabilityUnit Unit { get; init; } = CapabilityUnit.None;
 
-    /// <summary>Legal options for a choice setting.</summary>
+    /// <summary>
+    /// Legal options for a choice setting. The collection, its items, and every item's display
+    /// metadata must be non-null.
+    /// </summary>
     public IReadOnlyList<CapabilityChoice> Choices { get; init; } = [];
 
     /// <summary>Longest accepted value for a text setting. Required for text, rejected otherwise.</summary>
@@ -83,8 +88,33 @@ public sealed record PluginSettingDescriptor
             return false;
         }
 
-        if (!Display.TryValidate(out error))
+        if (!System.Enum.IsDefined(ValueKind))
         {
+            error = $"setting '{SettingId}' has an undefined valueKind '{ValueKind}'.";
+            return false;
+        }
+
+        if (!System.Enum.IsDefined(Unit))
+        {
+            error = $"setting '{SettingId}' has an undefined unit '{Unit}'.";
+            return false;
+        }
+
+        if (Display is null)
+        {
+            error = $"setting '{SettingId}' has no display metadata.";
+            return false;
+        }
+
+        if (!Display.TryValidate(out string? displayError))
+        {
+            error = $"setting '{SettingId}' has invalid display metadata: {displayError}";
+            return false;
+        }
+
+        if (Choices is null)
+        {
+            error = $"setting '{SettingId}' has no choices collection.";
             return false;
         }
 
@@ -112,13 +142,48 @@ public sealed record PluginSettingDescriptor
         }
 
         if (ValueKind is CapabilityValueKind.Choice
-            && (Choices.Count is 0 or > MaxChoices
-                || Choices.Any(choice => !PlainText.IsIdentifier(choice.Value, 64))
-                || Choices.Select(choice => choice.Value).Distinct(System.StringComparer.Ordinal)
-                    .Count() != Choices.Count))
+            && Choices.Count is 0 or > MaxChoices)
         {
-            error = $"setting '{SettingId}' has empty, invalid, oversized, or duplicated choices.";
+            error = $"setting '{SettingId}' has an empty or oversized choices collection.";
             return false;
+        }
+
+        if (ValueKind is CapabilityValueKind.Choice)
+        {
+            var choiceValues = new HashSet<string>(System.StringComparer.Ordinal);
+            for (int index = 0; index < Choices.Count; index++)
+            {
+                CapabilityChoice? choice = Choices[index];
+                if (choice is null)
+                {
+                    error = $"setting '{SettingId}' has a null choice at index {index}.";
+                    return false;
+                }
+
+                if (!PlainText.IsIdentifier(choice.Value, 64))
+                {
+                    error = $"setting '{SettingId}' has an invalid choice value at index {index}.";
+                    return false;
+                }
+
+                if (!choiceValues.Add(choice.Value))
+                {
+                    error = $"setting '{SettingId}' declares choice '{choice.Value}' more than once.";
+                    return false;
+                }
+
+                if (choice.Display is null)
+                {
+                    error = $"setting '{SettingId}' choice '{choice.Value}' has no display metadata.";
+                    return false;
+                }
+
+                if (!choice.Display.TryValidate(out string? choiceDisplayError))
+                {
+                    error = $"setting '{SettingId}' choice '{choice.Value}' has invalid display metadata: {choiceDisplayError}";
+                    return false;
+                }
+            }
         }
 
         if (ValueKind is not CapabilityValueKind.Choice && Choices.Count != 0)
@@ -139,7 +204,7 @@ public sealed record PluginSettingDescriptor
             return false;
         }
 
-        if (Default.Kind != ValueKind)
+        if (Default is null || Default.Kind != ValueKind)
         {
             error = $"setting '{SettingId}' has a default of the wrong value kind.";
             return false;
@@ -168,9 +233,27 @@ public sealed record PluginSettingDescriptor
     /// </remarks>
     public bool TryValidateValue(CapabilityValue? value, out string? error)
     {
-        if (value is null || value.Kind != ValueKind)
+        if (!System.Enum.IsDefined(ValueKind))
         {
-            error = $"value kind {value?.Kind.ToString() ?? "none"} does not match {ValueKind}.";
+            error = $"declared value kind {ValueKind} is undefined.";
+            return false;
+        }
+
+        if (value is null)
+        {
+            error = $"value kind none does not match {ValueKind}.";
+            return false;
+        }
+
+        if (!System.Enum.IsDefined(value.Kind))
+        {
+            error = $"value kind {value.Kind} is undefined.";
+            return false;
+        }
+
+        if (value.Kind != ValueKind)
+        {
+            error = $"value kind {value.Kind} does not match {ValueKind}.";
             return false;
         }
 
@@ -193,7 +276,8 @@ public sealed record PluginSettingDescriptor
                     return false;
                 }
 
-                if (Step is > 0 && (integer - (Minimum ?? 0)) % Step != 0)
+                if (Step is > 0
+                    && ((long)integer - (Minimum ?? 0)) % Step.Value != 0)
                 {
                     error = $"{integer} is not on the declared step of {Step}.";
                     return false;
@@ -208,8 +292,22 @@ public sealed record PluginSettingDescriptor
                     return false;
                 }
 
-                if (!Choices.Any(item =>
-                    string.Equals(item.Value, choice, System.StringComparison.Ordinal)))
+                if (Choices is null)
+                {
+                    error = "declared choices collection is missing.";
+                    return false;
+                }
+
+                if (Choices.Any(item => item is null))
+                {
+                    error = "declared choices collection contains a null item.";
+                    return false;
+                }
+
+                if (!Choices.Any(item => string.Equals(
+                    item.Value,
+                    choice,
+                    System.StringComparison.Ordinal)))
                 {
                     error = $"'{choice}' is not one of the {Choices.Count} declared options.";
                     return false;
@@ -252,9 +350,11 @@ public sealed record PluginSettingsManifest
     public const int MaxSettings = 96;
 
     /// <summary>The declared sections, in the order they were written.</summary>
+    /// <remarks>A null collection or item is an invalid manifest, including after deserialization.</remarks>
     public IReadOnlyList<PluginSettingSection> Sections { get; init; } = [];
 
     /// <summary>The declared settings, in the order they were written.</summary>
+    /// <remarks>A null collection or item is an invalid manifest, including after deserialization.</remarks>
     public IReadOnlyList<PluginSettingDescriptor> Settings { get; init; } = [];
 
     /// <summary>
@@ -269,6 +369,18 @@ public sealed record PluginSettingsManifest
     /// </remarks>
     public bool TryValidate(out string? error)
     {
+        if (Sections is null)
+        {
+            error = "manifest has no sections collection.";
+            return false;
+        }
+
+        if (Settings is null)
+        {
+            error = "manifest has no settings collection.";
+            return false;
+        }
+
         if (Sections.Count > MaxSections)
         {
             error = $"manifest declares {Sections.Count} sections; the limit is {MaxSections}.";
@@ -282,8 +394,15 @@ public sealed record PluginSettingsManifest
         }
 
         var sectionIds = new HashSet<string>(System.StringComparer.Ordinal);
-        foreach (PluginSettingSection section in Sections)
+        for (int index = 0; index < Sections.Count; index++)
         {
+            PluginSettingSection? section = Sections[index];
+            if (section is null)
+            {
+                error = $"manifest has a null section at index {index}.";
+                return false;
+            }
+
             if (!section.TryValidate(out error))
             {
                 return false;
@@ -297,8 +416,15 @@ public sealed record PluginSettingsManifest
         }
 
         var settingIds = new HashSet<string>(System.StringComparer.Ordinal);
-        foreach (PluginSettingDescriptor setting in Settings)
+        for (int index = 0; index < Settings.Count; index++)
         {
+            PluginSettingDescriptor? setting = Settings[index];
+            if (setting is null)
+            {
+                error = $"manifest has a null setting at index {index}.";
+                return false;
+            }
+
             if (!setting.TryValidate(out error))
             {
                 return false;

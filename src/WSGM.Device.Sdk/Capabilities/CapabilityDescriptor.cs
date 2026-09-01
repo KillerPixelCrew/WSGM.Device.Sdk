@@ -108,7 +108,10 @@ public sealed record CapabilityDescriptor
 
 /// <summary>One legal option of a choice capability.</summary>
 /// <param name="Value">Stable machine value, used in commands and persisted state.</param>
-/// <param name="Display">How WSGM labels the option.</param>
+/// <param name="Display">
+/// How WSGM labels the option. It must be non-null and satisfy
+/// <see cref="CapabilityDisplay.TryValidate"/> wherever the choice is accepted.
+/// </param>
 public sealed record CapabilityChoice(string Value, CapabilityDisplay Display);
 
 /// <summary>How long a written capability value survives.</summary>
