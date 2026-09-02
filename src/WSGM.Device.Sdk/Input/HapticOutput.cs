@@ -87,6 +87,24 @@ public sealed record HapticCapabilities
     /// <summary>Highest output frame rate the device accepts, in frames per second.</summary>
     public int MaxFramesPerSecond { get; init; } = 60;
 
+    /// <summary>Lowest intensity at which the device's motors reliably produce output, 0 to 1.</summary>
+    /// <remarks>
+    /// Motor technology, declared by the plugin because the host cannot know it: a voice coil or
+    /// LRA renders arbitrarily small intensities and keeps the default of zero, while an ERM
+    /// motor does not start below roughly a third of full drive. The host maps bounded haptic
+    /// events — not continuous rumble envelopes — onto this floor so LRA-grade ticks remain
+    /// perceptible; scaling a faithful actuator by an ERM floor would be as wrong as the reverse.
+    /// </remarks>
+    public float MinimumStartIntensity { get; init; }
+
+    /// <summary>Shortest pulse the device's motors can render perceptibly.</summary>
+    /// <remarks>
+    /// Zero for actuators with millisecond response; ERM motors need tens of milliseconds just
+    /// to spin up. The host stretches bounded haptic events to at least this length and leaves
+    /// continuous output untouched.
+    /// </remarks>
+    public TimeSpan MinimumPulse { get; init; }
+
     /// <summary>Drops channels the device cannot reproduce, leaving the rest untouched.</summary>
     /// <param name="frame">The frame as produced by the virtual target.</param>
     /// <returns>A frame carrying only channels the device supports.</returns>
