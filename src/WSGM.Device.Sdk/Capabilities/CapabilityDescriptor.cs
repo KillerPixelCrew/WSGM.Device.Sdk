@@ -39,21 +39,38 @@ public sealed record CapabilityDescriptor
     public required CapabilityDisplay Display { get; init; }
 
     /// <summary>
-    /// Which declared settings section this belongs to, for a <c>Generic*</c> role only.
+    /// Which declared section this belongs to: an overlay section declared in the same
+    /// <see cref="CapabilityDescriptorSet.Sections"/>, or — for a <c>Generic*</c> role — a
+    /// settings-manifest section.
     /// </summary>
     /// <remarks>
-    /// A semantic role keeps the home WSGM gives it: a power limit belongs under Power on every
-    /// device, and a plugin may not scatter semantic controls into invented groupings. That
-    /// consistency is the entire reason <see cref="DisplayKey"/> exists, and section assignment must
-    /// not become the hole in it — so this is refused on any role that is not
-    /// <see cref="CapabilityRoleExtensions.IsGeneric"/>.
+    /// A section declared in the descriptor set is the plugin authoring its own Device overlay
+    /// surface, and any role may be placed there: the layout ships atomically with the
+    /// capabilities it lays out, and every title and icon in it comes from a WSGM-owned
+    /// vocabulary, so the cross-device consistency <see cref="DisplayKey"/> protects survives the
+    /// placement. A semantic role naming a section the set does not declare is still refused —
+    /// outside a declared layout, a power limit belongs under Power on every device.
     /// <para>
-    /// A generic role has no home to keep, which is what makes placement safe there: WSGM has
-    /// nothing better to do with a control it has no semantics for than put it where the plugin
-    /// says. An unknown section falls back to a WSGM-owned group rather than dropping the control.
+    /// A generic role keeps its old latitude: an unknown section falls back to a WSGM-owned group
+    /// rather than dropping the control, because WSGM has nothing better to do with a control it
+    /// has no semantics for than put it where the plugin says.
     /// </para>
     /// </remarks>
     public string? SectionId { get; init; }
+
+    /// <summary>
+    /// Which category of the declared section this belongs to, or null for the section's
+    /// uncategorised lead group.
+    /// </summary>
+    /// <remarks>
+    /// Legal only when <see cref="SectionId"/> names a section declared in the same set and that
+    /// section declares the category: a category is a heading on a section's page, so referencing
+    /// one without the page it belongs to would name nothing.
+    /// </remarks>
+    public string? CategoryId { get; init; }
+
+    /// <summary>Placement within its section and category. Ties break on declaration order.</summary>
+    public int SortOrder { get; init; }
 
     /// <summary>Whether the current value can be read back from hardware.</summary>
     public bool SupportsRead { get; init; }
@@ -144,6 +161,16 @@ public sealed record CapabilityDescriptorSet
 
     /// <summary>The device generation these descriptors describe.</summary>
     public required long CycleGeneration { get; init; }
+
+    /// <summary>
+    /// The overlay sections this set's descriptors may reference, in declaration order.
+    /// </summary>
+    /// <remarks>
+    /// Published inside the set so layout and content replace atomically: a capability can never
+    /// reference a section from another generation. An empty list declares no layout, and every
+    /// capability keeps the semantic home WSGM gives its role.
+    /// </remarks>
+    public IReadOnlyList<CapabilitySection> Sections { get; init; } = [];
 
     /// <summary>Every capability the device currently offers.</summary>
     public IReadOnlyList<CapabilityDescriptor> Descriptors { get; init; } = [];
