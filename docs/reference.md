@@ -481,8 +481,9 @@ detection may have missed a press); `Discontinuity` (the stream restarted); `Fir
 (the reference controller can deliver a corrupt first state with every axis at its extreme).
 
 `MotionSample`: `GyroX/Y/Z` in degrees per second with `HasGyro`; `AccelX/Y/Z` in g with
-`HasAccelerometer`; optional `SensorTimestamp`. The two are independent because the reference
-handheld reports a gyroscope and no accelerometer.
+`HasAccelerometer`; optional `SensorTimestamp`. The two are independent because hardware and
+operating-system sensor stacks may expose one without the other; a plugin never synthesizes the
+missing source.
 
 ### Haptic output
 

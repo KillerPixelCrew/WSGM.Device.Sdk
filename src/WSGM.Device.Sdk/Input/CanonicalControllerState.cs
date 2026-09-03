@@ -251,8 +251,8 @@ public sealed record CanonicalControllerSample
 /// </summary>
 /// <remarks>
 /// Gyroscope and accelerometer are separate and optional because a device may have one without the
-/// other — verified on the reference handheld, which reports a gyroscope and no accelerometer at all.
-/// Synthesizing the missing one would invent data.
+/// other, or its operating-system sensor stack may project only one of them. Synthesizing a missing
+/// sensor would invent data.
 /// </remarks>
 public sealed record MotionSample
 {
