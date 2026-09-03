@@ -77,6 +77,9 @@ These are not style preferences. They are why the surface looks the way it does:
   back. Plugins never call the virtual-controller backend, never own WSGM's Steam Input lease and
   never touch HidHide.
 
+[`docs/reference.md`](docs/reference.md) describes every one of those types, the rules the host
+applies to what a plugin publishes, and every limit, in the order a plugin experiences them.
+
 ## Authoring, packaging and testing
 
 [**Device Lab**](https://github.com/KillerPixelCrew/WSGM.DeviceLab) is the companion tool: it
