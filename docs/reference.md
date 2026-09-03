@@ -128,12 +128,14 @@ applied.
 | `PublishOemEventAsync(OemControlEvent, ct)` | One press or release edge, deduplicated by `DeduplicationId`. |
 | `PublishSettingsManifestAsync(PluginSettingsManifest, ct)` | A declaration WSGM draws, validates, stores and localizes. A manifest that fails `TryValidate` is refused and the previous one kept. |
 | `Trace(DeviceTraceLevel, scope, message)` | Synchronous, void, never throws. Best-effort and unordered with respect to publications. Truncated past `PluginTrace.MaxMessageLength`. |
+| `TraceChange(DeviceTraceLevel, scope, key, message)` | Same contract, plus a key the host uses to suppress an unchanged repeat and count it. Default implementation forwards to `Trace`, so a host built before API 3 writes every call instead of losing it. |
 | `ReportFault(scope, message)` | Default implementation traces at `Error`. WSGM's adapter also closes command admission, makes the device safe, stops and disposes the plugin, and restarts it under the bounded fault policy. Use only for failures of plugin-started work that outlive their initiating call. |
 
 ### `PluginTrace`
 
 A static, ambient sink shaped like WSGM's own `Log`: a no-op until `Install(adapter)` is called,
-normally as the first statement of `StartAsync`. `DeviceTraceLevel` is `Info`, `Warn`, `Error`.
+normally as the first statement of `StartAsync`. `DeviceTraceLevel` is `Info`, `Warn`, `Error`,
+`Debug` — declared in that order so the values that existed before `Debug` did not move.
 
 | Member | Behaviour |
 | --- | --- |
@@ -142,7 +144,15 @@ normally as the first statement of `StartAsync`. `DeviceTraceLevel` is `Info`, `
 | `Info(scope, message)` | A decision or state change on a normal path. |
 | `Warn(scope, message)` | Something degraded, was refused or fell back. |
 | `Error(scope, message)` | A failure the plugin could not handle. |
+| `Debug(scope, message)` | Detail worth keeping only while investigating. The host suppresses it unless diagnostics are raised. |
+| `Change(scope, key, message, level = Info)` | A polled state under a key, written only when it differs from that key's last line. Repeats are counted, not dropped. |
 | `Failure(scope, context, Exception)` | Writes `Warn` as `context: ExceptionType: message`. Put one at the top of every `catch` that would otherwise collapse distinct failures into one flag. |
+
+`Debug` is not a licence to trace per sample: a suppressed line still costs the call and the string
+that built it, and raising diagnostics must not turn the log into the thing the level exists to
+prevent. Use `Change` for anything a poll loop observes — one measured device session produced 7,619
+motion lines, 40% of everything recorded, from two messages a reader kept re-stating either side of
+a freshness threshold.
 
 A trace is swallowed if the sink throws (except `OutOfMemoryException`). Never trace inside the
 controller sample loop: it runs at about 125 Hz and would out-write everything else in the log.
@@ -770,7 +780,8 @@ The compiler catches none of these; the host relies on all of them.
 - Declare dependencies, never install them. A missing prerequisite makes one capability
   unavailable with `PrerequisiteMissing`.
 - Trace decisions, not samples. Install `PluginTrace` first thing in `StartAsync`; one `Failure`
-  line at the top of every catch; nothing in the 125 Hz loop.
+  line at the top of every catch; `Change` for anything a poll loop observes; `Debug` for detail
+  that only matters mid-investigation; nothing at all in the 125 Hz loop.
 - Own no UI. Labels, titles, icons and units come from the closed vocabularies; custom text is
   bounded plain text.
 

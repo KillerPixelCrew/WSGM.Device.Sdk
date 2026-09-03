@@ -22,6 +22,7 @@ public sealed class TestPluginHostAdapter : IPluginHostAdapter
     private readonly List<OemControlEvent> _oemEvents = [];
     private readonly List<PluginSettingsManifest> _settingsManifests = [];
     private readonly List<(DeviceTraceLevel Level, string Scope, string Message)> _traces = [];
+    private readonly List<(DeviceTraceLevel Level, string Scope, string Key, string Message)> _changes = [];
 
     /// <summary>Creates an adapter for one cycle generation.</summary>
     /// <param name="cycleGeneration">Cycle generation exposed to the plugin.</param>
@@ -67,6 +68,10 @@ public sealed class TestPluginHostAdapter : IPluginHostAdapter
     /// </remarks>
     public IReadOnlyList<(DeviceTraceLevel Level, string Scope, string Message)> Traces =>
         Snapshot(_traces);
+
+    /// <summary>Keyed state lines in emission order, from <see cref="PluginTrace.Change"/>.</summary>
+    public IReadOnlyList<(DeviceTraceLevel Level, string Scope, string Key, string Message)> Changes =>
+        Snapshot(_changes);
 
     /// <inheritdoc />
     public ValueTask PublishDescriptorsAsync(
@@ -135,6 +140,25 @@ public sealed class TestPluginHostAdapter : IPluginHostAdapter
         lock (_gate)
         {
             _traces.Add((level, scope ?? string.Empty, message));
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Recorded with its key but without suppression: a test asserting that a poll loop reports a
+    /// transition should see every call it made, and a test asserting suppression would be testing
+    /// the host's dedup rather than the plugin's decision to report.
+    /// </remarks>
+    public void TraceChange(DeviceTraceLevel level, string scope, string key, string message)
+    {
+        if (string.IsNullOrEmpty(message))
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            _changes.Add((level, scope ?? string.Empty, key ?? string.Empty, message));
         }
     }
 

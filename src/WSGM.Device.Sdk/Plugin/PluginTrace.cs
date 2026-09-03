@@ -13,6 +13,15 @@ public enum DeviceTraceLevel
 
     /// <summary>A failure the plugin could not handle.</summary>
     Error,
+
+    /// <summary>
+    /// Detail worth recording only while investigating a specific problem, suppressed by default.
+    /// </summary>
+    /// <remarks>
+    /// Declared last so the numeric values of the levels that existed before it do not move. Order
+    /// here is declaration order, not severity: the host maps each level explicitly.
+    /// </remarks>
+    Debug,
 }
 
 /// <summary>
@@ -56,6 +65,62 @@ public static class PluginTrace
     /// <param name="message">The line.</param>
     public static void Error(string scope, string message) =>
         Write(DeviceTraceLevel.Error, scope, message);
+
+    /// <summary>Records detail that only matters while investigating a specific problem.</summary>
+    /// <param name="scope">Subsystem producing the line, used as the log prefix.</param>
+    /// <param name="message">The line.</param>
+    /// <remarks>
+    /// The host suppresses this level unless diagnostics are raised, so it is the right home for
+    /// values that would drown the default log. It is not a licence to trace per sample: a
+    /// suppressed line still costs the call and the string that built it, and raising diagnostics
+    /// must not turn the log into the thing this level exists to prevent.
+    /// </remarks>
+    public static void Debug(string scope, string message) =>
+        Write(DeviceTraceLevel.Debug, scope, message);
+
+    /// <summary>Records a polled state, writing only when it differs from that key's last line.</summary>
+    /// <param name="scope">Subsystem producing the line, used as the log prefix.</param>
+    /// <param name="key">Stable identity of the thing observed, unique within <paramref name="scope"/>.</param>
+    /// <param name="message">The current state, written verbatim when it changed.</param>
+    /// <param name="level">Level for the line when it is written.</param>
+    /// <remarks>
+    /// A plugin polls hardware, and a poll loop that traces every pass is how a log stops being
+    /// readable: one measured device session produced 7,619 motion lines, 40% of everything
+    /// recorded, from two messages a 125 Hz reader kept re-stating either side of a threshold.
+    /// Repeats under a key are counted rather than dropped, so the next line that does change still
+    /// shows the poll kept running and for how long.
+    /// <para>
+    /// A host that predates this member falls back to writing every call, so a plugin gets the
+    /// suppression where the host offers it and correct, merely repetitive, output where it does
+    /// not.
+    /// </para>
+    /// </remarks>
+    public static void Change(
+        string scope,
+        string key,
+        string message,
+        DeviceTraceLevel level = DeviceTraceLevel.Info)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        IPluginHostAdapter? sink = _sink;
+        if (sink is null || string.IsNullOrEmpty(message))
+        {
+            return;
+        }
+
+        try
+        {
+            sink.TraceChange(
+                level,
+                scope,
+                key,
+                message.Length > MaxMessageLength ? message[..MaxMessageLength] : message);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Same contract as Write: a trace never fails the operation it was describing.
+        }
+    }
 
     /// <summary>Records a caught exception with its type and message.</summary>
     /// <param name="scope">Subsystem producing the line, used as the log prefix.</param>

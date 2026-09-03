@@ -136,10 +136,11 @@ public sealed class SdkCapabilitySectionTests
     }
 
     [Fact]
-    public void TheOverlayVocabularyIsApiVersionTwo()
+    public void TheApiVersionIsPinnedSoRaisingItIsADeliberateAct()
     {
-        // Sections and categories are new descriptor-set surface; a plugin compiled against the
-        // old contract must not be loaded as though it could declare them.
-        Assert.Equal(2, WSGM.Device.Sdk.DeviceApi.Version);
+        // PluginManifestValidator requires exact equality, so every raise invalidates every
+        // published package. Version 2 added sections and categories; version 3 added the
+        // suppressed trace level and TraceChange.
+        Assert.Equal(3, WSGM.Device.Sdk.DeviceApi.Version);
     }
 }

@@ -103,6 +103,20 @@ public interface IPluginHostAdapter
     /// </remarks>
     void Trace(DeviceTraceLevel level, string scope, string message);
 
+    /// <summary>Records a polled state, writing only when that key's value changed.</summary>
+    /// <param name="level">Level for the line when it is written.</param>
+    /// <param name="scope">Subsystem producing the line.</param>
+    /// <param name="key">Stable identity of the thing observed, unique within <paramref name="scope"/>.</param>
+    /// <param name="message">The current state.</param>
+    /// <remarks>
+    /// Hosts should suppress an unchanged repeat and count it, so the next line that does change can
+    /// report how long the previous state held. The default implementation writes every call, which
+    /// keeps a host built against an earlier version of this interface correct — repetitive, but
+    /// never missing a line.
+    /// </remarks>
+    void TraceChange(DeviceTraceLevel level, string scope, string key, string message) =>
+        Trace(level, scope, message);
+
     /// <summary>Reports a background service failure that invalidates the active device cycle.</summary>
     /// <param name="scope">Subsystem that faulted.</param>
     /// <param name="message">Bounded diagnostic detail.</param>
