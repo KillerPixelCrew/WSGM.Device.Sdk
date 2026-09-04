@@ -17,7 +17,7 @@ Related:
 | Assembly / package | `WSGM.Device.Sdk` |
 | Target framework | `net10.0-windows`, matching the host that loads the plugin |
 | Dependencies | none; a plugin inherits nothing from the SDK |
-| API version | `DeviceApi.Version = 2`; WSGM, Device Lab and every plugin require an exact match |
+| API version | `DeviceApi.Version = 3`; WSGM, Device Lab and every plugin require an exact match |
 | Package version | `0.1.0`; pre-1.0, a breaking change moves the minor version |
 | Licence | MIT (WSGM itself is GPL-3.0-or-later) |
 | Documentation | every public member is documented; an undocumented member fails the build |
@@ -604,7 +604,7 @@ package data, never by the manifest.
   "id": "wsgm.device.msi.claw-8-a2vm",
   "name": "MSI Claw 8 AI+ A2VM",
   "version": "1.2.0",
-  "apiVersion": 2,
+  "apiVersion": 3,
   "entryAssembly": "WSGM.Device.Msi.Claw8A2Vm.dll",
   "entryType": "WSGM.Device.Msi.Claw8A2Vm.Claw8A2VmPlugin"
 }
@@ -789,7 +789,7 @@ The compiler catches none of these; the host relies on all of them.
 
 | Limit | Value | Defined on |
 | --- | --- | --- |
-| API version | 2 | `DeviceApi.Version` |
+| API version | 3 | `DeviceApi.Version` |
 | Trace message | 1024 chars | `PluginTrace.MaxMessageLength` |
 | Custom label | 48 | `CapabilityDisplay.MaxCustomLabelLength` |
 | Overlay sections per set | 16 | `CapabilitySection.MaxSections` |
@@ -822,3 +822,4 @@ The compiler catches none of these; the host relies on all of them.
 | --- | --- |
 | 1 | Initial contract: lifecycle, capabilities, canonical input and haptics, OEM controls, settings manifest, glyph packages, manifest validation, test kit. |
 | 2 | Overlay section vocabulary: `CapabilityDescriptorSet.Sections`, `CapabilitySection`, `CapabilityCategory`, `SectionIcon`, and `CategoryId`/`SortOrder` on `CapabilityDescriptor`. `HapticCapabilities.MinimumStartIntensity` and `MinimumPulse` were added within version 2 as additive fields with zero defaults. |
+| 3 | Suppressed and repeat-aware diagnostics: `DeviceTraceLevel.Debug`, `PluginTrace.Debug`, `PluginTrace.Change`, and `IPluginHostAdapter.TraceChange`. The adapter member has a default implementation so version 2 hosts and test doubles continue to compile. |
