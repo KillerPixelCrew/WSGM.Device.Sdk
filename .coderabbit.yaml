@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+tone_instructions: >-
+  Be concise and evidence-first. Report only actionable defects with a concrete trigger, impact,
+  and smallest safe correction; omit praise, style nitpicks, and generic security advice.
+
+reviews:
+  profile: chill
+  request_changes_workflow: true
+  high_level_summary: true
+  review_status: true
+  changed_files_summary: false
+  sequence_diagrams: false
+  estimate_code_review_effort: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  enable_prompt_for_ai_agents: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/bin/**"
+    - "!**/obj/**"
+    - "!artifacts/**"
+    - "!**/*.nupkg"
+    - "!**/*.snupkg"
+  path_instructions:
+    - path: "src/WSGM.Device.Sdk/**"
+      instructions: |
+        Treat this project as the zero-dependency, exact-type-identity public contract shared by
+        the host, Device Lab, and plugins. Flag new PackageReference or ProjectReference items.
+        Review public API, enum numeric values, record and interface semantics, wire names, JSON
+        shape, and default interface behavior as compatibility-sensitive. A contract change must
+        keep DeviceApi.Version, manifest validation, XML documentation, docs/reference.md API
+        history, examples, and focused tests synchronized. Detection must remain side-effect free;
+        command and lifecycle changes must preserve live revalidation, bounded deadlines,
+        generation checks, whole-set versus individual publication semantics, and truthful
+        uncertain-write/readback/rollback outcomes.
+    - path: "src/WSGM.Device.Sdk/{Packaging,Glyphs,Serialization,Settings}/**"
+      instructions: |
+        Require strict, deterministic, bounded, fail-closed validation. Malformed input should
+        return useful diagnostics rather than escape as parser exceptions. Preserve source-generated
+        camel-case JSON and required unknown-member rejection. Glyph import must retain the exact
+        authored SVG or PNG evidence bytes; normalization may only create a separate projection.
+        Settings persistence and transactional policy belong to the host, not this SDK.
+    - path: "tests/**"
+      instructions: |
+        Require focused regression coverage for every changed contract boundary, including API and
+        enum compatibility, dependency freedom, JSON failures, limits, lifecycle generations and
+        deadlines, settings validation, glyph byte retention, and trace behavior. Tests must remain
+        deterministic and hardware-free.
+    - path: "README.md"
+      instructions: |
+        Check that public examples, versioning guidance, target framework, dependency claims, and
+        build or pack commands match the shipping project and contract exactly.
+    - path: "docs/**"
+      instructions: |
+        Treat the reference as part of the public API. Flag stale signatures, enum members, limits,
+        JSON examples, apiVersion values, lifecycle semantics, or API-history entries.
+    - path: ".github/workflows/**"
+      instructions: |
+        Preserve the Windows .NET 10 Release build, no-build test, documentation-warning gate, and
+        package validation flow. Keep action references intentional and permissions least-privilege.
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
