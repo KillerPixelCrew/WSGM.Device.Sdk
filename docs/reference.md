@@ -825,6 +825,15 @@ A plugin may declare up to 16
 `Id`, a plain-text `Name`, `SustainedWatts`, `SlowWatts`, and `WindowsMode` (`BetterBattery`,
 `Balanced`, or `BestPerformance`). Windows modes are separate from power plans.
 
+Optional `ScenarioOnAc` and `ScenarioOnDc` targets select a firmware scenario before the watt
+limits. Declare both or neither. They must name choices of exactly one single-instance, readable,
+writable `ScenarioMode` capability available on both power sources. A host must know the current
+power source, confirm the scenario readback, re-read the watt pair after the scenario command,
+and include the scenario in preset matching. A source change during application stops remaining
+writes without retry. Scenario targets are one-shot selections, not stored desired-state policy.
+This extends the existing preset and scenario vocabulary without exposing device registers;
+firmware scenario choices can describe MSI SHIFT modes or another device's thermal modes.
+
 `DevicePowerPreset.TryValidate` checks the complete descriptor set: exactly one readable, writable
 sustained/slow watt pair, targets inside both ranges and steps, sustained <= slow, unique IDs of
 1-64 ASCII letters/digits/dots/underscores/hyphens, and names bounded to 120 characters. `custom`
