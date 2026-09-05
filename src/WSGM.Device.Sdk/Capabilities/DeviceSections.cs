@@ -39,6 +39,7 @@ public static class DeviceSections
     /// <remarks>Descriptors may reference these predefined IDs without declaring their sections.
     /// Empty pages need not be rendered. Custom sections still require explicit declarations.</remarks>
     public static IReadOnlyList<CapabilitySection> IncludePredefined(IReadOnlyList<CapabilitySection> declared) =>
-        All.Select(section => declared.FirstOrDefault(item => item.SectionId == section.SectionId) ?? section)
+        All.Select(section => section with
+        { Categories = declared.FirstOrDefault(item => item.SectionId == section.SectionId)?.Categories ?? section.Categories })
             .Concat(declared.Where(item => !All.Any(section => section.SectionId == item.SectionId))).ToArray();
 }

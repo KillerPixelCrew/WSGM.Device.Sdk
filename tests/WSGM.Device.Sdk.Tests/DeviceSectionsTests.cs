@@ -27,4 +27,16 @@ public sealed class DeviceSectionsTests
         Assert.Equal(custom, sections[^1]);
         Assert.False((power with { CustomTitle = "Replacement" }).TryValidate(out _));
     }
+
+    [Fact]
+    public void ExistingDeclarationsKeepCategoriesAndUseSharedMetadata()
+    {
+        var legacy = DeviceSections.Power with
+        { Key = SettingSectionKey.Custom, CustomTitle = "Legacy", SortOrder = 9 };
+        Assert.True(legacy.TryValidate(out _));
+        var shared = DeviceSections.IncludePredefined([legacy])[0];
+        Assert.Equal(DeviceSections.Power.Key, shared.Key);
+        Assert.Null(shared.CustomTitle);
+        Assert.Equal(DeviceSections.Power.SortOrder, shared.SortOrder);
+    }
 }

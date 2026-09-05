@@ -253,13 +253,21 @@ disappears; nothing lingers as permanently unavailable.
 | --- | --- |
 | `long Generation` | Monotonic; increments whenever any descriptor changes. |
 | `long CycleGeneration` | The device generation these descriptors describe. |
-| `IReadOnlyList<CapabilitySection> Sections` | The overlay sections descriptors may reference, in declaration order. Empty declares no layout. |
+| `IReadOnlyList<CapabilitySection> Sections` | The overlay sections descriptors may reference, in declaration order. Empty uses the predefined sections. |
 | `IReadOnlyList<CapabilityDescriptor> Descriptors` | Every capability the device currently offers. |
 
 ### `CapabilitySection` and `CapabilityCategory`
 
-A section is a page of the Device overlay the plugin lays out; a category is a heading on that
-page. Both travel inside the set so layout and content replace atomically. The plugin chooses
+`DeviceSections` predefines Power (`power`), RGB (`rgb`), Controller (`controller`) and Info
+(`info`). WSGM and plugins place controls on the same pages using these stable IDs. Descriptors
+may reference a predefined section without declaring it. A plugin can declare a record copy with
+categories; the predefined identity, title key, icon and ordering stay WSGM-owned. Existing valid declarations are accepted, with shared metadata canonicalized by the host. Custom sections
+still require a declaration. Hosts use `IncludePredefined` when validating and projecting layouts
+and render only populated pages. WSGM's Windows energy controls keep Power populated even when
+device integration is disabled.
+
+A section is a page of the Device overlay; a category is a heading on that
+page. Both travel inside the set so layout and content replace atomically. For custom sections, the plugin chooses
 placement, order, a title key and an icon; WSGM owns every string, geometry and control shape.
 `TryValidate(out error)` on both types applies exactly these rules.
 
@@ -817,14 +825,6 @@ The compiler catches none of these; the host relies on all of them.
 | Notice path | 256 | `GlyphPackageImporter` |
 
 ## Device power presets
-
-`DeviceSections` predefines Power (`power`), RGB (`rgb`), Controller (`controller`) and Info
-(`info`). WSGM and plugins place controls on the same pages using these stable IDs. Descriptors
-may reference a predefined section without declaring it. A plugin can declare a record copy with
-categories; the predefined identity, title key, icon and ordering stay WSGM-owned. Custom sections
-still require a declaration. Hosts use `IncludePredefined` when validating and projecting layouts
-and render only populated pages. WSGM's Windows energy controls keep Power populated even when
-device integration is disabled.
 
 `CapabilityDescriptor.PowerPresets` defaults to an empty list. Assignment copies the supplied
 collection into a read-only snapshot; later array or list edits cannot alter a published descriptor.

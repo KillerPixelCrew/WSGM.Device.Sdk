@@ -127,7 +127,8 @@ public sealed record CapabilityCategory
 /// <remarks>
 /// Sections are published inside the <see cref="CapabilityDescriptorSet"/> so layout and content
 /// replace atomically: a capability can never reference a section from another generation. The
-/// plugin chooses placement, order, title key, and icon; it never supplies layout, markup, or
+/// plugin chooses custom section placement, order, title key, and icon; shared sections use
+/// <see cref="DeviceSections"/> metadata. The plugin never supplies layout, markup, or
 /// artwork — titles come from <see cref="SettingSectionKey"/> or bounded plain text, and icons from
 /// the closed <see cref="SectionIcon"/> vocabulary, which is what keeps every device speaking the
 /// same visual language in the overlay.
@@ -189,15 +190,6 @@ public sealed record CapabilitySection
     /// <returns><see langword="true"/> when the section is safe to render.</returns>
     public bool TryValidate(out string? error)
     {
-        foreach (CapabilitySection shared in DeviceSections.All)
-        {
-            if (SectionId == shared.SectionId && (Key != shared.Key || Icon != shared.Icon
-                || CustomTitle is not null || CustomDescription is not null || SortOrder != shared.SortOrder))
-            {
-                error = $"Predefined section '{SectionId}' permits category additions only.";
-                return false;
-            }
-        }
         if (!PlainText.IsIdentifier(SectionId, MaxSectionIdLength))
         {
             error = $"sectionId '{SectionId}' is not a legal identifier.";
