@@ -818,7 +818,9 @@ The compiler catches none of these; the host relies on all of them.
 
 ## Device power presets
 
-`CapabilityDescriptor.PowerPresets` defaults to an empty list. A plugin may declare up to 16
+`CapabilityDescriptor.PowerPresets` defaults to an empty list. Assignment copies the supplied
+collection into a read-only snapshot; later array or list edits cannot alter a published descriptor.
+A plugin may declare up to 16
 `DevicePowerPreset` records on its single-instance sustained watt limit. Each supplies a stable
 `Id`, a plain-text `Name`, `SustainedWatts`, `SlowWatts`, and `WindowsMode` (`BetterBattery`,
 `Balanced`, or `BestPerformance`). Windows modes are separate from power plans.

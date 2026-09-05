@@ -24,7 +24,30 @@ public sealed class SdkPowerPresetTests
         [Limit(CapabilityRole.PowerSustainedLimit) with { PowerPresets = presets }, Limit(CapabilityRole.PowerSlowLimit)];
 
     [Fact]
-    public void EmptyPresetsPreserveExistingDescriptors() => Assert.True(DevicePowerPreset.TryValidate(Pair(), out _));
+    public void EmptyPresetsPreserveExistingDescriptors()
+    {
+        CapabilityDescriptor sustained = Limit(CapabilityRole.PowerSustainedLimit);
+        Assert.NotNull(sustained.PowerPresets);
+        Assert.Empty(sustained.PowerPresets);
+        Assert.True(DevicePowerPreset.TryValidate([sustained, Limit(CapabilityRole.PowerSlowLimit)], out _));
+    }
+
+    [Fact]
+    public void AssignmentSnapshotsMutableArraysAndLists()
+    {
+        var preset = new DevicePowerPreset("battery", "Battery", 8, 9, DevicePowerMode.BetterBattery);
+        DevicePowerPreset[] array = [preset];
+        List<DevicePowerPreset> list = [preset];
+        var fromArray = Limit(CapabilityRole.PowerSustainedLimit) with { PowerPresets = array };
+        var fromList = Limit(CapabilityRole.PowerSustainedLimit) with { PowerPresets = list };
+        array[0] = preset with { SustainedWatts = 37 };
+        list.Clear();
+        Assert.Equal(preset, Assert.Single(fromArray.PowerPresets));
+        Assert.Equal(preset, Assert.Single(fromList.PowerPresets));
+        var exposed = Assert.IsAssignableFrom<IList<DevicePowerPreset>>(fromArray.PowerPresets);
+        Assert.True(exposed.IsReadOnly);
+        Assert.Throws<NotSupportedException>(() => exposed[0] = array[0]);
+    }
 
     [Fact]
     public void ValidTargetsRoundTripWithTheDescriptorSet()

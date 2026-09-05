@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace WSGM.Device.Sdk.Capabilities;
@@ -97,8 +99,20 @@ public sealed record CapabilityDescriptor
     public IReadOnlyList<CapabilityChoice> Choices { get; init; } = [];
 
     /// <summary>Optional device-authored shortcuts on the single-instance sustained power limit.
-    /// Empty by default. See <see cref="DevicePowerPreset"/> for bounds and host behavior.</summary>
-    public IReadOnlyList<DevicePowerPreset> PowerPresets { get; init; } = [];
+    /// Empty by default. Assignment takes a read-only snapshot so later edits to the supplied
+    /// collection cannot change this descriptor. See <see cref="DevicePowerPreset"/> for bounds
+    /// and host behavior.</summary>
+    public IReadOnlyList<DevicePowerPreset> PowerPresets
+    {
+        get => _powerPresets;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            _powerPresets = Array.AsReadOnly(value.ToArray());
+        }
+    }
+
+    private readonly IReadOnlyList<DevicePowerPreset> _powerPresets = [];
 
     /// <summary>
     /// Longest accepted value for a <see cref="CapabilityValueKind.Text"/> capability.
