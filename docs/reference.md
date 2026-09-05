@@ -818,6 +818,14 @@ The compiler catches none of these; the host relies on all of them.
 
 ## Device power presets
 
+`DeviceSections` predefines Power (`power`), RGB (`rgb`), Controller (`controller`) and Info
+(`info`). WSGM and plugins place controls on the same pages using these stable IDs. Descriptors
+may reference a predefined section without declaring it. A plugin can declare a record copy with
+categories; the predefined identity, title key, icon and ordering stay WSGM-owned. Custom sections
+still require a declaration. Hosts use `IncludePredefined` when validating and projecting layouts
+and render only populated pages. WSGM's Windows energy controls keep Power populated even when
+device integration is disabled.
+
 `CapabilityDescriptor.PowerPresets` defaults to an empty list. Assignment copies the supplied
 collection into a read-only snapshot; later array or list edits cannot alter a published descriptor.
 A plugin may declare up to 16

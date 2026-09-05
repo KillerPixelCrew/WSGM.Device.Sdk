@@ -189,6 +189,15 @@ public sealed record CapabilitySection
     /// <returns><see langword="true"/> when the section is safe to render.</returns>
     public bool TryValidate(out string? error)
     {
+        foreach (CapabilitySection shared in DeviceSections.All)
+        {
+            if (SectionId == shared.SectionId && (Key != shared.Key || Icon != shared.Icon
+                || CustomTitle is not null || CustomDescription is not null || SortOrder != shared.SortOrder))
+            {
+                error = $"Predefined section '{SectionId}' permits category additions only.";
+                return false;
+            }
+        }
         if (!PlainText.IsIdentifier(SectionId, MaxSectionIdLength))
         {
             error = $"sectionId '{SectionId}' is not a legal identifier.";
