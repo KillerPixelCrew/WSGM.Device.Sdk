@@ -96,6 +96,10 @@ public sealed record CapabilityDescriptor
     /// <summary>Legal options for a choice capability.</summary>
     public IReadOnlyList<CapabilityChoice> Choices { get; init; } = [];
 
+    /// <summary>Optional device-authored shortcuts on the single-instance sustained power limit.
+    /// Empty by default. See <see cref="DevicePowerPreset"/> for bounds and host behavior.</summary>
+    public IReadOnlyList<DevicePowerPreset> PowerPresets { get; init; } = [];
+
     /// <summary>
     /// Longest accepted value for a <see cref="CapabilityValueKind.Text"/> capability.
     /// </summary>
