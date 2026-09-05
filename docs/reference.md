@@ -816,6 +816,29 @@ The compiler catches none of these; the host relies on all of them.
 | SVG paths / commands / path data | 256 / 4096 / 64 KiB | `GlyphProfileLimits` |
 | Notice path | 256 | `GlyphPackageImporter` |
 
+## Device power presets
+
+`CapabilityDescriptor.PowerPresets` defaults to an empty list. Assignment copies the supplied
+collection into a read-only snapshot; later array or list edits cannot alter a published descriptor.
+A plugin may declare up to 16
+`DevicePowerPreset` records on its single-instance sustained watt limit. Each supplies a stable
+`Id`, a plain-text `Name`, `SustainedWatts`, `SlowWatts`, and `WindowsMode` (`BetterBattery`,
+`Balanced`, or `BestPerformance`). Windows modes are separate from power plans.
+
+`DevicePowerPreset.TryValidate` checks the complete descriptor set: exactly one readable, writable
+sustained/slow watt pair, targets inside both ranges and steps, sustained <= slow, unique IDs of
+1-64 ASCII letters/digits/dots/underscores/hyphens, and names bounded to 120 characters. `custom`
+is reserved for the host's observed state. Other roles cannot carry presets.
+
+The host applies these as explicit shortcuts through existing capability commands and its Windows
+backend. It derives Custom when any observed target differs; it never reapplies a preset because
+values changed. A multi-control failure can leave a partial result, which must be reported without
+an automatic retry. No plugin gets Windows handles or UI responsibilities through this contract.
+`SdkPowerPresetTests` covers serialization, defaults, target validation, and declaration bounds.
+
+The optional preset metadata was added within API 3 with an empty default; no existing descriptor
+changes meaning.
+
 ## Version history
 
 | API | Change |

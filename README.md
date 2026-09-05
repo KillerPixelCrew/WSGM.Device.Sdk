@@ -42,6 +42,11 @@ You publish **capabilities** — a TDP limit, a fan curve, a lighting zone — a
 routes user intent back as `CapabilityCommand`, and shows whatever you report. It never talks to
 your hardware.
 
+A sustained-power descriptor can declare `PowerPresets`: named shortcuts combining its watt limit,
+the device's slow watt limit, and a `DevicePowerMode`. WSGM owns application and Windows access;
+the plugin supplies the device-specific numbers. Validate the complete descriptor set with
+`DevicePowerPreset.TryValidate`. Presets do not enforce values after selection.
+
 ## What is in here
 
 | Namespace | What it carries |
