@@ -43,9 +43,14 @@ routes user intent back as `CapabilityCommand`, and shows whatever you report. I
 your hardware.
 
 A sustained-power descriptor can declare `PowerPresets`: named shortcuts combining its watt limit,
-the device's slow watt limit, and a `DevicePowerMode`. WSGM owns application and Windows access;
+the device's slow watt limit, a `DevicePowerMode`, and optional AC/battery `ScenarioMode` choices.
+WSGM applies the scenario first and confirms all targets. WSGM owns application and Windows access;
 the plugin supplies the device-specific numbers. Validate the complete descriptor set with
 `DevicePowerPreset.TryValidate`. Presets do not enforce values after selection.
+
+`DeviceSections` provides shared Power, RGB, Controller and Info pages. Reference their IDs from
+capabilities, optionally add categories with record copies, and declare custom sections for other
+subjects. WSGM can contribute its own controls to the shared pages.
 
 ## What is in here
 

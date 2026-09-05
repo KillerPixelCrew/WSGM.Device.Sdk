@@ -89,4 +89,32 @@ public sealed class SdkPowerPresetTests
         Assert.False(DevicePowerPreset.TryValidate(Pair(preset, preset), out _));
         Assert.False(DevicePowerPreset.TryValidate(Pair(Enumerable.Range(0, 17).Select(i => preset with { Id = $"p{i}" }).ToArray()), out _));
     }
+
+    [Fact]
+    public void ScenarioTargetsRequireBothSourcesAndOneWritableChoiceCapability()
+    {
+        var preset = new DevicePowerPreset("battery", "Battery", 8, 9, DevicePowerMode.BetterBattery)
+        { ScenarioOnAc = "eco", ScenarioOnDc = "comfort" };
+        var scenario = new CapabilityDescriptor
+        {
+            CapabilityId = "scenario",
+            Role = CapabilityRole.ScenarioMode,
+            ValueKind = CapabilityValueKind.Choice,
+            Persistence = CapabilityPersistence.Volatile,
+            Display = new() { Key = DisplayKey.PerformanceProfile },
+            SupportsRead = true,
+            SupportsWrite = true,
+            Choices = [new("eco", new() { Key = DisplayKey.PerformanceProfile }),
+                new("comfort", new() { Key = DisplayKey.PerformanceProfile })],
+        };
+        Assert.True(DevicePowerPreset.TryValidate([.. Pair(preset), scenario], out _));
+        Assert.Equal(preset, JsonSerializer.Deserialize<DevicePowerPreset>(JsonSerializer.Serialize(preset)));
+        Assert.False(DevicePowerPreset.TryValidate(Pair(preset), out _));
+        Assert.False(DevicePowerPreset.TryValidate([.. Pair(preset), scenario, scenario], out _));
+        Assert.False(DevicePowerPreset.TryValidate([.. Pair(preset), scenario with { SupportsWrite = false }], out _));
+        Assert.False(DevicePowerPreset.TryValidate([.. Pair(preset), scenario with { InstanceId = "second" }], out _));
+        Assert.False(DevicePowerPreset.TryValidate([.. Pair(preset), scenario with { AvailableOnDc = false }], out _));
+        Assert.False(DevicePowerPreset.TryValidate([.. Pair(preset with { ScenarioOnDc = null }), scenario], out _));
+        Assert.False(DevicePowerPreset.TryValidate([.. Pair(preset with { ScenarioOnAc = "missing" }), scenario], out _));
+    }
 }

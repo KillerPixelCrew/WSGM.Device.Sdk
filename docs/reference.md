@@ -253,13 +253,21 @@ disappears; nothing lingers as permanently unavailable.
 | --- | --- |
 | `long Generation` | Monotonic; increments whenever any descriptor changes. |
 | `long CycleGeneration` | The device generation these descriptors describe. |
-| `IReadOnlyList<CapabilitySection> Sections` | The overlay sections descriptors may reference, in declaration order. Empty declares no layout. |
+| `IReadOnlyList<CapabilitySection> Sections` | The overlay sections descriptors may reference, in declaration order. Empty uses the predefined sections. |
 | `IReadOnlyList<CapabilityDescriptor> Descriptors` | Every capability the device currently offers. |
 
 ### `CapabilitySection` and `CapabilityCategory`
 
-A section is a page of the Device overlay the plugin lays out; a category is a heading on that
-page. Both travel inside the set so layout and content replace atomically. The plugin chooses
+`DeviceSections` predefines Power (`power`), RGB (`rgb`), Controller (`controller`) and Info
+(`info`). WSGM and plugins place controls on the same pages using these stable IDs. Descriptors
+may reference a predefined section without declaring it. A plugin can declare a record copy with
+categories; the predefined identity, title key, icon and ordering stay WSGM-owned. Existing valid declarations are accepted, with shared metadata canonicalized by the host. Custom sections
+still require a declaration. Hosts use `IncludePredefined` when validating and projecting layouts
+and render only populated pages. WSGM's Windows energy controls keep Power populated even when
+device integration is disabled.
+
+A section is a page of the Device overlay; a category is a heading on that
+page. Both travel inside the set so layout and content replace atomically. For custom sections, the plugin chooses
 placement, order, a title key and an icon; WSGM owns every string, geometry and control shape.
 `TryValidate(out error)` on both types applies exactly these rules.
 
@@ -824,6 +832,15 @@ A plugin may declare up to 16
 `DevicePowerPreset` records on its single-instance sustained watt limit. Each supplies a stable
 `Id`, a plain-text `Name`, `SustainedWatts`, `SlowWatts`, and `WindowsMode` (`BetterBattery`,
 `Balanced`, or `BestPerformance`). Windows modes are separate from power plans.
+
+Optional `ScenarioOnAc` and `ScenarioOnDc` targets select a firmware scenario before the watt
+limits. Declare both or neither. They must name choices of exactly one single-instance, readable,
+writable `ScenarioMode` capability available on both power sources. A host must know the current
+power source, confirm the scenario readback, re-read the watt pair after the scenario command,
+and include the scenario in preset matching. A source change during application stops remaining
+writes without retry. Scenario targets are one-shot selections, not stored desired-state policy.
+This extends the existing preset and scenario vocabulary without exposing device registers;
+firmware scenario choices can describe MSI SHIFT modes or another device's thermal modes.
 
 `DevicePowerPreset.TryValidate` checks the complete descriptor set: exactly one readable, writable
 sustained/slow watt pair, targets inside both ranges and steps, sustained <= slow, unique IDs of
